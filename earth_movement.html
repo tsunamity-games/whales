@@ -41,6 +41,8 @@
     </style>
 </head>
 <body>
+    <script src="country_coordinates.js"></script>
+    <script src="json_reader.js"></script>
     <h1 class="title">Ocean Sailing Game</h1>
     <canvas id="oceanCanvas" width="512" height="512"></canvas>
     <div class="info">
@@ -59,22 +61,13 @@
         let isMoving = false;
 
         const continents = {
-            northAmerica: [
-                { x: 50, y: 180 },
-                { x: 100, y: 150 },
-                { x: 130, y: 100 },
-                { x: 160, y: 130 },
-                { x: 180, y: 220 },
-                { x: 140, y: 250 },
-                { x: 50, y: 180 }
-            ],
-            otherContinent: [
-                { x: 250, y: 150 },
-                { x: 300, y: 130 },
-                { x: 320, y: 180 },
-                { x: 280, y: 220 },
-                { x: 250, y: 180 }
-            ]
+            NorthKorea: coordinates.NorthKorea,
+            SouthKorea: coordinates.SouthKorea,
+            USA: coordinates.USA,
+            Japan: coordinates.Japan,
+            Canada: coordinates.Canada,
+            Russia: coordinates.Russia,
+
         };
 
         // Utility functions for spherical calculations
@@ -172,13 +165,23 @@
             ctx.fillStyle = '#8B4513';
 
             // Loop through each continent and draw its shape
-            for (const continent of Object.values(continents)) {
-                ctx.beginPath();
-                ctx.moveTo(continent[0].x, continent[0].y);
-                for (let i = 1; i < continent.length; i++) {
-                    ctx.lineTo(continent[i].x, continent[i].y);
+            for (let country in continents) {
+                console.log(country);
+                for (const countryPart of continents[country]){
+                    ctx.beginPath();
+                    for (const coordPair of countryPart){
+                        if (coordPair.x < 0){
+                            coordPair.x += 360;
+                        }
+                        if (coordPair.x > 360){
+                            coordPair.x -= 360;
+                        }
+                        console.log(coordPair.x, coordPair.y);
+                        ctx.lineTo(coordPair.x, 90-coordPair.y);
+                    }
+                    ctx.fill();
+                    console.log("Finished part");
                 }
-                ctx.fill();
             }
         };
 
