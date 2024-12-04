@@ -27,5 +27,6 @@ coordinates = {"Canada": canada.features.map(feature  => feature.geometry.coordi
                "NorthKorea": north_korea.features.map(feature  => feature.geometry.coordinates),
                "Russia": russia.features.map(feature  => feature.geometry.coordinates),
                "SouthKorea": south_korea.features.map(feature  => feature.geometry.coordinates),
-               "USA": usa.features.map(feature  => feature.geometry.coordinates)};
+               "USA": usa.features.map(feature  => feature.geometry.coordinates),
+               "China": china.features.map(feature  => feature.geometry.coordinates)};
 coordinates = transformObject(coordinates);
