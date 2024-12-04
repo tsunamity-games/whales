@@ -188,7 +188,7 @@
             ctx.fillStyle = '#4A90E2';
             ctx.fillRect(0, 0, 512, 512);
 
-            ctx.fillStyle = '#8B4513';
+            ctx.fillStyle = '#334513';
 
             // Loop through each continent and draw its shape
             for (let country in continents) {
@@ -238,7 +238,7 @@
 
         // Update the drawLatLonLines function
         const drawLatLonLines = () => {
-            ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
             ctx.lineWidth = 1;
 
             // Draw latitude lines every 10 degrees
@@ -271,7 +271,7 @@
         const drawShip = (x, y) => {
             ctx.save();
             ctx.translate(x, y);
-            ctx.fillStyle = 'red';
+            ctx.fillStyle = '#D63031';
             ctx.beginPath();
             ctx.moveTo(0, -10);
             ctx.lineTo(-5, 10);
