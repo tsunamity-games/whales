@@ -123,21 +123,46 @@
             };
         };
 
-        // Mercator projection conversion functions
+        // Add these configuration variables near the top of your script section
+        const viewportConfig = {
+            // Example: Focus on Pacific region
+            minLon: 120,  // East
+            maxLon: -100, // West (across Pacific)
+            minLat: 0,    // South
+            maxLat: 70,   // North
+            padding: 20   // Padding in degrees
+        };
+
+        // Update the Mercator conversion functions
         const convertLatLonToMercator = (lat, lon) => {
-            const R = 512; // Radius of the projection
-            const x = R * (lon + 180) / 360;
-            const y = (1 - Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI / 360))) / Math.PI) * (R / 2);
+            // Clamp latitude to viewport
+            lat = Math.max(viewportConfig.minLat - viewportConfig.padding, 
+                  Math.min(viewportConfig.maxLat + viewportConfig.padding, lat));
+            
+            // Handle longitude wrapping for Pacific view
+            if (viewportConfig.minLon > viewportConfig.maxLon) {
+                if (lon < 0) lon += 360;
+            }
+            
+            // Scale to viewport
+            const lonRange = viewportConfig.minLon > viewportConfig.maxLon ? 
+                (360 - viewportConfig.minLon + viewportConfig.maxLon) :
+                (viewportConfig.maxLon - viewportConfig.minLon);
+            const latRange = viewportConfig.maxLat - viewportConfig.minLat;
+            
+            const x = 512 * (lon - viewportConfig.minLon) / lonRange;
+            const y = 512 * (1 - (lat - viewportConfig.minLat) / latRange);
             return { x, y };
         };
 
         const convertMercatorToLatLon = (x, y) => {
-            const R = 512; // Radius of the projection
-            const lon = (x * 360 / R) - 180;
-            const lat = radToDeg(2 * Math.atan(Math.exp((1 - 2 *y / R) * Math.PI)) - Math.PI / 2);
-
-            // const lon = (x / W) * 360 - 180;
-            // const lat = Math.atan(Math.sinh(Math.PI * (1 - 2 * (y / R)))) * (180 / Math.PI);
+            const lonRange = viewportConfig.minLon > viewportConfig.maxLon ? 
+                (360 - viewportConfig.minLon + viewportConfig.maxLon) :
+                (viewportConfig.maxLon - viewportConfig.minLon);
+            const latRange = viewportConfig.maxLat - viewportConfig.minLat;
+            
+            const lon = (x * lonRange / 512) + viewportConfig.minLon;
+            const lat = viewportConfig.minLat + (1 - y / 512) * latRange;
             
             return { lat, lon };
         };
@@ -166,41 +191,69 @@
 
             // Loop through each continent and draw its shape
             for (let country in continents) {
-                console.log(country);
-                for (const countryPart of continents[country]){
+                for (const countryPart of continents[country]) {
                     ctx.beginPath();
-                    for (const coordPair of countryPart){
-                        if (coordPair.x < 0){
-                            coordPair.x += 360;
+                    let isFirstPoint = true;
+                    
+                    for (const coordPair of countryPart) {
+                        let lon = coordPair.x;
+                        let lat = coordPair.y;
+                        
+                        // Normalize longitude to handle date line crossing
+                        if (lon < 0) lon += 360;
+                        if (lon > 360) lon -= 360;
+                        
+                        // Skip points outside our viewport (with padding)
+                        if (lat < viewportConfig.minLat - viewportConfig.padding || 
+                            lat > viewportConfig.maxLat + viewportConfig.padding) {
+                            continue;
                         }
-                        if (coordPair.x > 360){
-                            coordPair.x -= 360;
+                        
+                        // Handle Pacific view case
+                        if (viewportConfig.minLon > viewportConfig.maxLon) {
+                            if (lon < viewportConfig.minLon && lon > viewportConfig.maxLon) {
+                                continue;
+                            }
+                        } else {
+                            if (lon < viewportConfig.minLon || lon > viewportConfig.maxLon) {
+                                continue;
+                            }
                         }
-                        console.log(coordPair.x, coordPair.y);
-                        ctx.lineTo(coordPair.x, 90-coordPair.y);
+
+                        // Convert coordinates to viewport space
+                        const mercatorPos = convertLatLonToMercator(lat, lon);
+                        
+                        if (isFirstPoint) {
+                            ctx.moveTo(mercatorPos.x, mercatorPos.y);
+                            isFirstPoint = false;
+                        } else {
+                            ctx.lineTo(mercatorPos.x, mercatorPos.y);
+                        }
                     }
                     ctx.fill();
-                    console.log("Finished part");
                 }
             }
         };
 
-        // Draw latitude and longitude lines
+        // Update the drawLatLonLines function
         const drawLatLonLines = () => {
             ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
             ctx.lineWidth = 1;
 
-            // Draw latitude lines
-            for (let lat = -90; lat <= 90; lat += 30) {
-                const mercatorY = convertLatLonToMercator(lat, 0).y;
+            // Draw latitude lines every 10 degrees
+            for (let lat = Math.ceil(viewportConfig.minLat/10)*10; 
+                 lat <= viewportConfig.maxLat; lat += 10) {
+                const mercatorY = convertLatLonToMercator(lat, viewportConfig.minLon).y;
                 ctx.beginPath();
                 ctx.moveTo(0, mercatorY);
                 ctx.lineTo(512, mercatorY);
                 ctx.stroke();
             }
 
-            // Draw longitude lines
-            for (let lon = -180; lon <= 180; lon += 30) {
+            // Draw longitude lines every 10 degrees
+            for (let lon = Math.ceil(viewportConfig.minLon/10)*10; 
+                 lon <= (viewportConfig.minLon > viewportConfig.maxLon ? 360 : viewportConfig.maxLon); 
+                 lon += 10) {
                 const mercatorX = convertLatLonToMercator(0, lon).x;
                 ctx.beginPath();
                 ctx.moveTo(mercatorX, 0);
